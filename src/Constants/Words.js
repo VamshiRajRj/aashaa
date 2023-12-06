@@ -1,6 +1,18 @@
 const LIST = {
   1: [
     'ACCOUNT',
+    'ACCOUNT',
+    'ACCOUNT',
+    'ACCOUNT',
+    'ACCOUNT',
+    'ACCOUNT',
+    'ACCOUNT',
+    'ACCOUNT',
+    'ACCOUNT',
+    'ACCOUNT',
+    'ACCOUNT',
+    'ACCOUNT',
+    'ACCOUNT',
     'ACCURATE',
     'ACRES',
     'ACROSS',

@@ -14,11 +14,18 @@ const LoginScreen = ({onChange}) => {
   const [id, setId] = useState(null);
 
   const getData = () => {
-    axios
-      .get(`http://aashaa.ap-1.evennode.com/getUser/${id}`)
+    Promise.all([
+      axios.get(`http://localhost:3000/getUser/${id?.id}`),
+      axios.get(`http://localhost:3000/get-levels/${id?.subject}`),
+    ])
       .then(res => {
-        if (res?.status === 200 || res?.status === 201) {
-          onChange(res?.data);
+        if (
+          res[0]?.status === 200 ||
+          res[0]?.status === 201 ||
+          res[1]?.status === 200 ||
+          res[1]?.status === 201
+        ) {
+          onChange({user: res[0].data, levels: res[1].data});
         } else {
           console.error(res);
         }
@@ -77,7 +84,7 @@ const LoginScreen = ({onChange}) => {
             width: '90%',
             marginBottom: 6,
           }}>
-          Welcome to Aasha Foundation!
+          Welcome to Thara Foundation!
         </Text>
         <Text
           style={{
@@ -91,7 +98,7 @@ const LoginScreen = ({onChange}) => {
         </Text>
         <TextInput
           onChangeText={v => {
-            setId(v);
+            setId({...id, id: v});
           }}
           placeholder="Enter your ID"
           style={{
@@ -104,6 +111,24 @@ const LoginScreen = ({onChange}) => {
             paddingVertical: 13,
             paddingStart: 8,
             color: '#1c1c1e',
+          }}
+        />
+        <TextInput
+          onChangeText={v => {
+            setId({...id, subject: v});
+          }}
+          placeholder="Enter the subject"
+          style={{
+            height: 45,
+            borderColor: '#1c1c1e60',
+            width: '90%',
+            borderWidth: 1,
+            fontSize: 16,
+            lineHeight: 19,
+            paddingVertical: 13,
+            paddingStart: 8,
+            color: '#1c1c1e',
+            marginTop: 12,
           }}
         />
 

@@ -10,24 +10,10 @@ import {
   View,
 } from 'react-native';
 import React, {useRef, useState, useEffect} from 'react';
-import LIST from './src/Constants/Words';
 import LevelComplete from './src/Components/LevelComplete';
 import LoginScreen from './src/Components/LoginScreen';
 import axios from 'axios';
 import DropShadow from 'react-native-drop-shadow';
-
-const data = [
-  {id: 1, title: 'Level 1'},
-  {id: 2, title: 'Level 2'},
-  {id: 3, title: 'Level 3'},
-  {id: 4, title: 'Level 4'},
-  {id: 5, title: 'Level 5'},
-  {id: 6, title: 'Level 6'},
-  {id: 7, title: 'Level 7'},
-  {id: 8, title: 'Level 8'},
-  {id: 9, title: 'Level 9'},
-  // Add more data as needed
-];
 
 const App = () => {
   const [word, setWord] = useState('START');
@@ -36,25 +22,28 @@ const App = () => {
   const [score, setScore] = useState(0);
   const [inpValue, setInpValue] = useState({current: 0, value: ''});
   const [level, setLevel] = useState(null);
+  const [levels, setLevels] = useState([]);
 
-  const [resendButtonDisabledTime, setResendButtonDisabledTime] = useState(-1);
+  const [resendButtonDisabledTime, setResendButtonDisabledTime] = useState(0);
   let resendOtpTimerInterval = null;
 
   const start = () => {
     setResendButtonDisabledTime(10);
-    setWord(LIST[level][0]);
+    setWord(level?.words[0]);
   };
 
   const Card = ({item}) => {
     return (
       <DropShadow
+        key={item?._id}
         style={{
           ...styles.card,
           shadowColor: '#171717',
           shadowOffset: {width: 0, height: 3},
           shadowOpacity: 0.4,
           shadowRadius: 2,
-          borderBottomColor: user.currentLevel >= item?.id ? 'green' : 'red',
+          borderBottomColor:
+            user.currentLevel[item?.subject] >= item?.level ? 'green' : 'red',
           borderBottomWidth: 5,
         }}>
         <TouchableOpacity
@@ -64,9 +53,13 @@ const App = () => {
             height: '100%',
             flex: 1,
           }}
-          activeOpacity={user.currentLevel >= item?.id ? 0.5 : 1}
+          activeOpacity={
+            user.currentLevel[item?.subject] >= item?.level ? 0.5 : 1
+          }
           onPress={() => {
-            user.currentLevel >= item?.id ? setLevel(item?.id) : null;
+            user.currentLevel[item?.subject] >= item?.level
+              ? setLevel(item)
+              : null;
           }}>
           <Text
             style={{
@@ -75,9 +68,9 @@ const App = () => {
               fontWeight: '600',
               width: '100%',
             }}>
-            {item?.title}
+            Level {item?.level}
           </Text>
-          {user.currentLevel < item?.id && (
+          {user.currentLevel[item?.subject] < item?.level && (
             <Image
               style={{width: 24, height: 24, position: 'absolute', right: 12}}
               source={{
@@ -86,7 +79,7 @@ const App = () => {
             />
           )}
           {/* Add other card contents here */}
-          {user.currentLevel > item?.id ? (
+          {user.currentLevel[item?.subject] > item?.level ? (
             <Text
               style={{
                 color: '#1C1C1E99',
@@ -95,9 +88,9 @@ const App = () => {
                 marginTop: 4,
                 width: '100%',
               }}>
-              Your Score : {user.scores[item.id + '']}
+              Your Score : {user.scores[item?.subject][item.level + '']}
             </Text>
-          ) : user.currentLevel == item?.id ? (
+          ) : user.currentLevel[item?.subject] == item?.level ? (
             <Text
               style={{
                 color: '#1C1C1E99',
@@ -130,10 +123,10 @@ const App = () => {
       clearInterval(resendOtpTimerInterval);
     }
     resendOtpTimerInterval = setInterval(() => {
-      if (resendButtonDisabledTime == 0) {
+      if (resendButtonDisabledTime == 1) {
         clearInterval(resendOtpTimerInterval);
         stop();
-      } else if (resendButtonDisabledTime == -1) {
+      } else if (resendButtonDisabledTime == 0) {
         clearInterval(resendOtpTimerInterval);
       } else {
         setResendButtonDisabledTime(resendButtonDisabledTime - 1);
@@ -160,7 +153,7 @@ const App = () => {
         if (word?.length - 1 === inpValue.current) {
           setInpValue({current: 0, value: ''});
           setScore(score + 1);
-          setWord(LIST[level][score + 1]);
+          setWord(level?.words[score + 1]);
         } else {
           setInpValue({current: inpValue.current + 1, value: t});
         }
@@ -169,27 +162,32 @@ const App = () => {
   };
   const stop = () => {
     let sco = user?.scores;
-    if (sco === undefined) {
-      sco = {1: score};
-    } else {
-      if (sco[level] < score) {
-        sco[level] = score;
-      }
+    let currentLevels = user?.currentLevel;
+    if (
+      sco[level?.subject][level?.level] < score ||
+      sco[level?.subject][level?.level] === undefined
+    ) {
+      sco[level?.subject][level?.level] = score;
+    }
+    if (user?.currentLevel[level?.subject] === level?.level) {
+      currentLevels[level?.subject] = level?.level + 1;
     }
 
     axios
-      .post('http://aashaa.ap-1.evennode.com/store-score', {
+      .post('http://localhost:3000/store-score', {
         userId: user.userId,
-        levelId: level,
+        levelId: level?.level,
         score: score,
         scores: sco,
+        subject: level?.subject,
+        currentLevels: currentLevels,
       })
       .then(res => {
-        setUser({...user, scores: sco, currentLevel: level + 1});
+        setUser({...user, scores: sco, currentLevel: currentLevels});
         setHurray({visible: true, data: res?.data});
       })
       .catch(e => console.error(JSON.stringify(e)));
-    setResendButtonDisabledTime(-1);
+    setResendButtonDisabledTime(0);
 
     setWord('END');
   };
@@ -223,7 +221,7 @@ const App = () => {
                   setScore(0);
                   setHurray({visible: false, data: []});
                   setInpValue({current: 0, value: ''});
-                  setResendButtonDisabledTime(-1);
+                  setResendButtonDisabledTime(0);
                 }}
                 style={{
                   marginHorizontal: 12,
@@ -246,7 +244,7 @@ const App = () => {
       if (!level) {
         return (
           <FlatList
-            data={data}
+            data={levels}
             ListHeaderComponent={() => (
               <DropShadow
                 style={{
@@ -275,7 +273,7 @@ const App = () => {
                       setScore(0);
                       setHurray({visible: false, data: []});
                       setInpValue({current: 0, value: ''});
-                      setResendButtonDisabledTime(-1);
+                      setResendButtonDisabledTime(0);
                     }}
                     style={{
                       marginHorizontal: 12,
@@ -335,7 +333,7 @@ const App = () => {
                     setScore(0);
                     setHurray({visible: false, data: []});
                     setInpValue({current: 0, value: ''});
-                    setResendButtonDisabledTime(-1);
+                    setResendButtonDisabledTime(0);
                   }}
                   style={{
                     marginHorizontal: 12,
@@ -358,7 +356,7 @@ const App = () => {
                     setScore(0);
                     setHurray({visible: false, data: []});
                     setInpValue({current: 0, value: ''});
-                    setResendButtonDisabledTime(-1);
+                    setResendButtonDisabledTime(0);
                   }}
                   style={{
                     marginHorizontal: 12,
@@ -393,7 +391,7 @@ const App = () => {
             </View>
             <View
               style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-              {resendButtonDisabledTime >= 0 && (
+              {resendButtonDisabledTime >= 1 && (
                 <Text style={{fontSize: 45, color: '#FFF', marginBottom: 12}}>
                   {resendButtonDisabledTime}
                 </Text>
@@ -459,7 +457,8 @@ const App = () => {
     return (
       <LoginScreen
         onChange={result => {
-          setUser(result);
+          setUser(result?.user);
+          setLevels(result?.levels);
         }}
       />
     );
