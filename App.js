@@ -160,6 +160,7 @@ const App = () => {
       }
     }
   };
+
   const stop = () => {
     let sco = user?.scores;
     let currentLevels = user?.currentLevel;
@@ -174,7 +175,7 @@ const App = () => {
     }
 
     axios
-      .post('http://localhost:3000/store-score', {
+      .post('https://thara.onrender.com/store-score', {
         userId: user.userId,
         levelId: level?.level,
         score: score,
@@ -184,7 +185,13 @@ const App = () => {
       })
       .then(res => {
         setUser({...user, scores: sco, currentLevel: currentLevels});
-        setHurray({visible: true, data: res?.data});
+        const vals = res?.data?.sort(function (a, b) {
+          return b.score - a.score;
+        });
+        setHurray({
+          visible: true,
+          data: vals,
+        });
       })
       .catch(e => console.error(JSON.stringify(e)));
     setResendButtonDisabledTime(0);

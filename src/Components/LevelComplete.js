@@ -76,7 +76,7 @@ const LevelComplete = ({values}) => {
           </DropShadow>
         )}
         renderItem={renderItem}
-        keyExtractor={item => item.name}
+        keyExtractor={item => item.userId}
       />
     </View>
   );
